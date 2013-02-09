@@ -7,7 +7,7 @@ doT Express Master of Ceremonies
 
 
 (function() {
-  var cache, curOptions, curPath, curVarname, def, defaultOptions, doT, fs, mergeObjects, path, renderFile, settings, workingPaths;
+  var cache, curOptions, curPath, def, defaults, doT, fs, mergeObjects, path, renderFile, workingPaths;
 
   fs = require("fs");
 
@@ -21,16 +21,15 @@ doT Express Master of Ceremonies
 
   curOptions = null;
 
-  curVarname = null;
-
   curPath = null;
 
-  settings = {
-    fileExtension: "def"
-  };
-
-  defaultOptions = {
-    "cache": true
+  defaults = {
+    fileExtension: "def",
+    options: {
+      templateSettings: {
+        cache: true
+      }
+    }
   };
 
   def = {
@@ -38,7 +37,7 @@ doT Express Master of Ceremonies
       var returnValue, template;
       returnValue = void 0;
       if (!path.extname(filename)) {
-        filename = "" + filename + "." + settings.fileExtension;
+        filename = "" + filename + "." + defaults.fileExtension;
       }
       if (curPath) {
         filename = path.resolve(curPath, filename);
@@ -46,12 +45,12 @@ doT Express Master of Ceremonies
       curPath = path.dirname(filename);
       workingPaths.push(curPath);
       try {
-        if (curOptions.cache && filename in cache) {
+        if (curOptions.templateSettings.cache && filename in cache) {
           template = cache[filename];
         } else {
           template = cache[filename] = fs.readFileSync(filename, 'utf8');
         }
-        returnValue = doT.template(template, curOptions, def)(curOptions[curVarname]);
+        returnValue = doT.template(template, curOptions.templateSettings, def)(curOptions);
       } catch (err) {
         workingPaths.pop();
         curPath = workingPaths.length ? workingPaths[workingPaths.length - 1] : null;
@@ -63,25 +62,39 @@ doT Express Master of Ceremonies
   };
 
   mergeObjects = function(target) {
-    var argLength, deep, i, key;
-    deep = false;
+    var arg, argLength, deep, i, key;
     if (typeof target !== "object") {
+      if (arguments.length === 1) {
+        return target;
+      }
       deep = (target ? true : false);
-      if (deep) {
-        target = (arguments.legnth > 1 ? arguments[1] : void 0);
-      }
+      target = arguments[1];
+      i = 2;
+    } else {
+      deep = false;
+      i = 1;
     }
-    i = (deep ? 2 : 1);
     argLength = arguments.length;
-    while (i < argLength) {
-      for (key in arguments[i]) {
-        if (deep && typeof arguments[i] === "object" && typeof target[key] === "object") {
-          target[key] = mergeObjects(deep, target[key], arguments[i][key]);
-        } else {
-          target[key] = arguments[i][key];
+    if (deep) {
+      while (i < argLength) {
+        arg = arguments[i];
+        for (key in arg) {
+          if (typeof arg === "object" && typeof target[key] === "object") {
+            target[key] = mergeObjects(deep, target[key], arg[key]);
+          } else {
+            target[key] = arg[key];
+          }
         }
+        i++;
       }
-      i++;
+    } else {
+      while (i < argLength) {
+        arg = arguments[i];
+        for (key in arg) {
+          target[key] = arg[key];
+        }
+        i++;
+      }
     }
     return target;
   };
@@ -89,14 +102,14 @@ doT Express Master of Ceremonies
   renderFile = function(filename, options, fn) {
     if (typeof options === "function") {
       fn = options;
-      options = doT.templateSettings;
+      options = {};
     }
     if (typeof fn !== "function") {
       fn = (function() {});
     }
-    mergeObjects(options, defaultOptions, doT.templateSettings);
-    curVarname = options.varname || doT.templateSettings.varname;
-    curOptions = options;
+    curOptions = mergeObjects(true, options, defaults.options, {
+      templateSettings: doT.templateSettings
+    });
     try {
       return fn(null, def.include(filename));
     } catch (err) {
@@ -108,8 +121,8 @@ doT Express Master of Ceremonies
 
   exports.renderFile = renderFile;
 
-  exports.init = function(set) {
-    settings = mergeObjects(settings, set);
+  exports.init = function(settings) {
+    defaults = mergeObjects(true, defaults, settings);
     return exports;
   };
 
