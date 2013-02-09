@@ -3,6 +3,7 @@
 /*
 doT Express Master of Ceremonies
 @author Dannel Albert <cuebix@gmail.com>
+@license http://opensource.org/licenses/MIT
 */
 
 
