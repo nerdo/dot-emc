@@ -7,6 +7,12 @@ fs = require "fs"
 path = require "path"
 doT = require "dot"
 
+# optional html pretty printer
+try
+	html = require "html"
+catch e
+	throw e if e.code != "MODULE_NOT_FOUND"
+
 cache = {}
 workingPaths = []
 curOptions = null
@@ -17,6 +23,10 @@ defaults =
 	options:
 		templateSettings: 
 			cache: true
+
+if html then defaults.options.prettyPrint =
+	indent_char: "	"
+	indent_size: 1
 
 def =
 	"include": (filename) ->
@@ -80,7 +90,10 @@ renderFile = (filename, options, fn) ->
 	curOptions = mergeObjects true, options, defaults.options, templateSettings: doT.templateSettings
 
 	try
-		fn null, def.include filename
+		if html and curOptions.pretty
+			fn null, html.prettyPrint def.include(filename), curOptions.prettyPrint or {}
+		else
+			fn null, def.include filename
 	catch err
 		fn err
 

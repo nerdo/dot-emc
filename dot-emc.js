@@ -7,13 +7,21 @@ doT Express Master of Ceremonies
 
 
 (function() {
-  var cache, curOptions, curPath, def, defaults, doT, fs, mergeObjects, path, renderFile, workingPaths;
+  var cache, curOptions, curPath, def, defaults, doT, fs, html, mergeObjects, path, renderFile, workingPaths;
 
   fs = require("fs");
 
   path = require("path");
 
   doT = require("dot");
+
+  try {
+    html = require("html");
+  } catch (e) {
+    if (e.code !== "MODULE_NOT_FOUND") {
+      throw e;
+    }
+  }
 
   cache = {};
 
@@ -31,6 +39,13 @@ doT Express Master of Ceremonies
       }
     }
   };
+
+  if (html) {
+    defaults.options.prettyPrint = {
+      indent_char: "	",
+      indent_size: 1
+    };
+  }
 
   def = {
     "include": function(filename) {
@@ -111,7 +126,11 @@ doT Express Master of Ceremonies
       templateSettings: doT.templateSettings
     });
     try {
-      return fn(null, def.include(filename));
+      if (html && curOptions.pretty) {
+        return fn(null, html.prettyPrint(def.include(filename), curOptions.prettyPrint || {}));
+      } else {
+        return fn(null, def.include(filename));
+      }
     } catch (err) {
       return fn(err);
     }
