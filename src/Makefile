@@ -1,0 +1,2 @@
+watch:
+	coffee -o .. -cw .

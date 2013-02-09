@@ -1,0 +1,36 @@
+{
+    "name": "dot-emc",
+    "description": "doT Express Master of Ceremonies is a doT stub for Express 3.x with support for caching and partials",
+    "keywords": [
+        "template",
+        "fast",
+        "simple",
+        "templating",
+        "express",
+        "doT",
+        "caching",
+        "partials",
+        "engine"
+    ],
+    "version": "0.1.0",
+    "main": "dot-emc.js",
+    "dependencies": {
+        "dot": ">= 1.0.0"
+    },
+    "homepage": "http://github.com/nerdo/dot-emc",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/nerdo/dot-emc.git"
+    },
+    "author": {
+        "name": "Dannel Albert",
+        "email": "cuebix@gmail.com"
+    },
+    "engines": [
+        "node >= 0.2.6"
+    ],
+    "_id": "dot-emc@0.1.0",
+    "readme": "dot-emc\n=======\n\ndoT Express Master of Ceremonies is a doT stub for Express 3.x with support for caching and partials",
+    "readmeFilename": "README.md",
+    "_from": "dot-emc@0.1.x"
+}
