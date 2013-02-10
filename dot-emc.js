@@ -92,7 +92,7 @@ doT Express Master of Ceremonies
           vars = mergeObjects(true, clone(curOptions), vars);
           break;
         case "boolean":
-          lDepth = vars ? tplDepth : 0;
+          lDepth = vars ? tplDepth : 1;
           break;
         case "number":
           lDepth = vars;

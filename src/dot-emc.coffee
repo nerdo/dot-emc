@@ -58,7 +58,7 @@ class Defines
 			when "boolean"
 				# it's a flag for whether to "bubble wrap" the template in literal tags
 				# this will ensure that wherever the define is used, it comes out literally
-				lDepth = if vars then tplDepth else 0
+				lDepth = if vars then tplDepth else 1
 			when "number"
 				lDepth = vars
 			when "undefined", "string"

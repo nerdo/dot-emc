@@ -91,6 +91,26 @@ index.def:
 	{{#def.include('page', {"title": "overriding the title set in the route"})}}
 	{{=it.title}}
 
+Templates may be included literally by passing a boolean or numeric value to include. This is useful when you want to make a template available on the client side in the body of the page. Suppose you had a template for a list.
+
+list.def:
+
+	<script type="text/x-dot-template" id="list-template">
+		<ul>
+			{{~ it.list.items :item}}
+			<li>{{=item.get("label")}}</li>
+			{{~}}
+		</ul>
+	</script>
+
+To have that template appear in the body of the page, as-is, your include would look like the following.
+
+index.def:
+
+	{{#def.include('list', true)}}
+
+Passing a non-object as the 2nd parameter to include causes the template to be returned as-is and wraps the content based on that parameter. Passing false will return the template as-is, without wrapping it. If you using the define from another include, however, the template will eventually get evaluated. Passing true wraps the template in as many literal tags necessary for it to "bubble up" to the last including template, so it always shows up as-is. For more deliberate control, pass in a numeric value for the number of times to wrap the template in literal tags.
+
 For more information on doT and its syntax, visit https://github.com/olado/doT
 
 License
