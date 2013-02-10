@@ -8,7 +8,7 @@ doT Express Master of Ceremonies
 
 
 (function() {
-  var cache, clone, curOptions, curPath, def, defaults, doT, fs, html, mergeObjects, path, renderFile, workingPaths;
+  var Defines, cache, clone, curOptions, curPath, defaults, doT, fs, html, mergeObjects, path, renderFile, workingPaths;
 
   fs = require("fs");
 
@@ -48,8 +48,11 @@ doT Express Master of Ceremonies
     };
   }
 
-  def = {
-    "include": function(filename, vars) {
+  Defines = (function() {
+
+    function Defines() {}
+
+    Defines.prototype.include = function(filename, vars) {
       var returnValue, template;
       returnValue = void 0;
       if (!path.extname(filename)) {
@@ -67,7 +70,7 @@ doT Express Master of Ceremonies
         } else {
           template = cache[filename] = fs.readFileSync(filename, 'utf8');
         }
-        returnValue = doT.template(template, curOptions.templateSettings, def)(vars);
+        returnValue = doT.template(template, curOptions.templateSettings, this)(vars);
         workingPaths.pop();
       } catch (err) {
         workingPaths.pop();
@@ -76,8 +79,11 @@ doT Express Master of Ceremonies
       }
       curPath = workingPaths.length ? workingPaths[workingPaths.length - 1] : null;
       return returnValue;
-    }
-  };
+    };
+
+    return Defines;
+
+  })();
 
   mergeObjects = function() {
     var arg, argLength, deep, i, key, start, t, target, val, valIsArray, valIsObject, _i, _j;
@@ -144,6 +150,7 @@ doT Express Master of Ceremonies
   };
 
   renderFile = function(filename, options, fn) {
+    var def;
     if (typeof options === "function") {
       fn = options;
       options = {};
@@ -154,6 +161,7 @@ doT Express Master of Ceremonies
     curOptions = mergeObjects(true, options, defaults.options, {
       templateSettings: doT.templateSettings
     });
+    def = new Defines();
     try {
       if (html && curOptions.pretty) {
         return fn(null, html.prettyPrint(def.include(filename), curOptions.prettyPrint || {}));
@@ -168,6 +176,8 @@ doT Express Master of Ceremonies
   exports.__express = renderFile;
 
   exports.renderFile = renderFile;
+
+  exports.Defines = Defines;
 
   exports.init = function(settings) {
     defaults = mergeObjects(true, defaults, settings);

@@ -29,8 +29,8 @@ if html then defaults.options.prettyPrint =
 	indent_char: "	"
 	indent_size: 1
 
-def =
-	"include": (filename, vars) ->
+class Defines
+	include: (filename, vars) ->
 		returnValue = undefined
 		filename = "#{filename}.#{defaults.fileExtension}" if !path.extname filename
 		filename = path.resolve curPath, filename if curPath
@@ -43,7 +43,7 @@ def =
 				template = cache[filename]
 			else
 				template = cache[filename] = fs.readFileSync filename, 'utf8'
-			returnValue = doT.template(template, curOptions.templateSettings, def)(vars)
+			returnValue = doT.template(template, curOptions.templateSettings, @)(vars)
 			workingPaths.pop()
 		catch err
 			workingPaths.pop()
@@ -106,6 +106,7 @@ renderFile = (filename, options, fn) ->
 		options = {}
 	fn = ( -> ) if typeof fn != "function"
 	curOptions = mergeObjects true, options, defaults.options, templateSettings: doT.templateSettings
+	def = new Defines()
 
 	try
 		if html and curOptions.pretty
@@ -117,6 +118,7 @@ renderFile = (filename, options, fn) ->
 
 exports.__express = renderFile
 exports.renderFile = renderFile
+exports.Defines = Defines
 exports.init = (settings) ->
 	defaults = mergeObjects true, defaults, settings
 	exports
