@@ -1,7 +1,7 @@
 {
   "name": "dot-emc",
   "version": "0.1.0",
-  "description": "doT Express Master of Ceremonies is a doT stub for Express 3.x with support for caching and partials.",
+  "description": "dot-emc is a doT stub for Express 3.x with support for caching and partials.",
   "main": "dot-emc.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

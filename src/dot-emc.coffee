@@ -30,19 +30,21 @@ if html then defaults.options.prettyPrint =
 	indent_size: 1
 
 def =
-	"include": (filename) ->
+	"include": (filename, vars) ->
 		returnValue = undefined
 		filename = "#{filename}.#{defaults.fileExtension}" if !path.extname filename
 		filename = path.resolve curPath, filename if curPath
 		curPath = path.dirname filename
 		workingPaths.push curPath
+		vars = if typeof vars != "object" then curOptions else mergeObjects true, clone(curOptions), vars
 
 		try
 			if curOptions.templateSettings.cache and filename of cache
 				template = cache[filename]
 			else
 				template = cache[filename] = fs.readFileSync filename, 'utf8'
-			returnValue = doT.template(template, curOptions.templateSettings, def)(curOptions)
+			returnValue = doT.template(template, curOptions.templateSettings, def)(vars)
+			workingPaths.pop()
 		catch err
 			workingPaths.pop()
 			curPath = if workingPaths.length then workingPaths[workingPaths.length - 1] else null
@@ -52,36 +54,51 @@ def =
 		returnValue
 
 # modeled after jQuery's extend method
-mergeObjects = (target) ->
-	if typeof target isnt "object"
-		return target if arguments.length == 1
-		deep = (if target then true else false)
-		target = arguments[1]
-		i = 2
+mergeObjects = () ->
+	target = arguments[0]
+	if typeof target is "boolean"
+		deep = target
+		target = arguments[1] or {}
+		start = 2
 	else
 		deep = false
-		i = 1
+		target = arguments[0] or {}
+		start = 1
 
 	argLength = arguments.length
 
 	if deep
-		while i < argLength
+		for i in [start..argLength]
 			arg = arguments[i]
+			continue if !arg
 			for key of arg
-				if typeof arg is "object" and typeof target[key] is "object"
-					# merge recursively
-					target[key] = mergeObjects deep, target[key], arg[key]
-				else
-					target[key] = arg[key]
-			i++
+				val = arg[key]
+				continue if target == val
+				t = target[key]
+				valIsArray = val instanceof Array
+				valIsObject = !valIsArray and typeof val == "object"
+				if (val) and (valIsObject or valIsArray)
+					val = val.slice(0) if valIsArray
+					if key of target
+						if valIsArray
+							t = if t instanceof Array then t else []
+						else
+							t = if typeof t is "object" then t else {}
+						target[key] = mergeObjects true, (if valIsArray then [] else {}), t, val
+					else
+						target[key] = val
+				else if val != undefined
+					target[key] = val
 	else
-		while i < argLength
+		for i in [start..argLength]
 			arg = arguments[i]
 			for key of arg
-					target[key] = arg[key]
-			i++
+				val = arg[key]
+				target[key] = val if val != undefined
 
 	target
+
+clone = (obj) -> mergeObjects true, {}, obj
 
 renderFile = (filename, options, fn) ->
 	if typeof options == "function"

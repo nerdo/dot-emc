@@ -8,7 +8,7 @@ doT Express Master of Ceremonies
 
 
 (function() {
-  var cache, curOptions, curPath, def, defaults, doT, fs, html, mergeObjects, path, renderFile, workingPaths;
+  var cache, clone, curOptions, curPath, def, defaults, doT, fs, html, mergeObjects, path, renderFile, workingPaths;
 
   fs = require("fs");
 
@@ -49,7 +49,7 @@ doT Express Master of Ceremonies
   }
 
   def = {
-    "include": function(filename) {
+    "include": function(filename, vars) {
       var returnValue, template;
       returnValue = void 0;
       if (!path.extname(filename)) {
@@ -60,13 +60,15 @@ doT Express Master of Ceremonies
       }
       curPath = path.dirname(filename);
       workingPaths.push(curPath);
+      vars = typeof vars !== "object" ? curOptions : mergeObjects(true, clone(curOptions), vars);
       try {
         if (curOptions.templateSettings.cache && filename in cache) {
           template = cache[filename];
         } else {
           template = cache[filename] = fs.readFileSync(filename, 'utf8');
         }
-        returnValue = doT.template(template, curOptions.templateSettings, def)(curOptions);
+        returnValue = doT.template(template, curOptions.templateSettings, def)(vars);
+        workingPaths.pop();
       } catch (err) {
         workingPaths.pop();
         curPath = workingPaths.length ? workingPaths[workingPaths.length - 1] : null;
@@ -77,42 +79,68 @@ doT Express Master of Ceremonies
     }
   };
 
-  mergeObjects = function(target) {
-    var arg, argLength, deep, i, key;
-    if (typeof target !== "object") {
-      if (arguments.length === 1) {
-        return target;
-      }
-      deep = (target ? true : false);
-      target = arguments[1];
-      i = 2;
+  mergeObjects = function() {
+    var arg, argLength, deep, i, key, start, t, target, val, valIsArray, valIsObject, _i, _j;
+    target = arguments[0];
+    if (typeof target === "boolean") {
+      deep = target;
+      target = arguments[1] || {};
+      start = 2;
     } else {
       deep = false;
-      i = 1;
+      target = arguments[0] || {};
+      start = 1;
     }
     argLength = arguments.length;
     if (deep) {
-      while (i < argLength) {
+      for (i = _i = start; start <= argLength ? _i <= argLength : _i >= argLength; i = start <= argLength ? ++_i : --_i) {
         arg = arguments[i];
+        if (!arg) {
+          continue;
+        }
         for (key in arg) {
-          if (typeof arg === "object" && typeof target[key] === "object") {
-            target[key] = mergeObjects(deep, target[key], arg[key]);
-          } else {
-            target[key] = arg[key];
+          val = arg[key];
+          if (target === val) {
+            continue;
+          }
+          t = target[key];
+          valIsArray = val instanceof Array;
+          valIsObject = !valIsArray && typeof val === "object";
+          if (val && (valIsObject || valIsArray)) {
+            if (valIsArray) {
+              val = val.slice(0);
+            }
+            if (key in target) {
+              if (valIsArray) {
+                t = t instanceof Array ? t : [];
+              } else {
+                t = typeof t === "object" ? t : {};
+              }
+              target[key] = mergeObjects(true, (valIsArray ? [] : {}), t, val);
+            } else {
+              target[key] = val;
+            }
+          } else if (val !== void 0) {
+            target[key] = val;
           }
         }
-        i++;
       }
     } else {
-      while (i < argLength) {
+      for (i = _j = start; start <= argLength ? _j <= argLength : _j >= argLength; i = start <= argLength ? ++_j : --_j) {
         arg = arguments[i];
         for (key in arg) {
-          target[key] = arg[key];
+          val = arg[key];
+          if (val !== void 0) {
+            target[key] = val;
+          }
         }
-        i++;
       }
     }
     return target;
+  };
+
+  clone = function(obj) {
+    return mergeObjects(true, {}, obj);
   };
 
   renderFile = function(filename, options, fn) {
