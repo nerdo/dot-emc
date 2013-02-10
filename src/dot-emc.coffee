@@ -18,35 +18,73 @@ cache = {}
 workingPaths = []
 curOptions = null
 curPath = null
+tplDepth = 0
 
 defaults =
 	fileExtension: "def"
 	options:
 		templateSettings: 
 			cache: true
+			literalDelimiters:
+				start: '{{@'
+				end: '@}}'
 
 if html then defaults.options.prettyPrint =
 	indent_char: "	"
 	indent_size: 1
 
+# CoffeeScript version of fast string repeat posted at http://stackoverflow.com/a/14026829/2057996
+repeat = (s, count) ->
+	return "" if count < 1
+	result = ""
+	pattern = s.valueOf()
+	while count > 1
+		result += pattern if count & 1
+		count >>= 1
+		pattern += pattern
+	result += pattern
+
 class Defines
 	include: (filename, vars) ->
+		tplDepth++
 		returnValue = undefined
 		filename = "#{filename}.#{defaults.fileExtension}" if !path.extname filename
 		filename = path.resolve curPath, filename if curPath
 		curPath = path.dirname filename
 		workingPaths.push curPath
-		vars = if typeof vars != "object" then curOptions else mergeObjects true, clone(curOptions), vars
+		switch typeof vars
+			when "object"
+				vars = mergeObjects true, clone(curOptions), vars
+			when "boolean"
+				# it's a flag for whether to "bubble wrap" the template in literal tags
+				# this will ensure that wherever the define is used, it comes out literally
+				lDepth = if vars then tplDepth else 0
+			when "number"
+				lDepth = vars
+			when "undefined", "string"
+				vars = curOptions
 
 		try
 			if curOptions.templateSettings.cache and filename of cache
 				template = cache[filename]
 			else
 				template = cache[filename] = fs.readFileSync filename, 'utf8'
-			returnValue = doT.template(template, curOptions.templateSettings, @)(vars)
+
+			if typeof vars == "object"
+				returnValue = doT.template(template, curOptions.templateSettings, @)(vars)
+			else
+				if lDepth > 1
+					ld = defaults.options.templateSettings.literalDelimiters
+					returnValue =  " #{repeat(ld.start, lDepth - 1)} #{template} #{repeat(ld.end, lDepth - 1)} "
+				else 
+					returnValue = template
+				console.log "filename = #{filename}"
+				console.log "returnValue = " + returnValue
 			workingPaths.pop()
+			tplDepth--
 		catch err
 			workingPaths.pop()
+			tplDepth--
 			curPath = if workingPaths.length then workingPaths[workingPaths.length - 1] else null
 			throw err
 
@@ -119,6 +157,16 @@ renderFile = (filename, options, fn) ->
 exports.__express = renderFile
 exports.renderFile = renderFile
 exports.Defines = Defines
+exports.mergeObjects = mergeObjects
+exports.clone = clone
 exports.init = (settings) ->
 	defaults = mergeObjects true, defaults, settings
+	# rebuild literal regex
+	ts = defaults.options.templateSettings
+	ts.literal = new RegExp(
+		ts.literalDelimiter.start.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") +
+		"([\\s\\S]+?)" +
+		ts.literalDelimiter.end.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"),
+		"g"
+	)
 	exports

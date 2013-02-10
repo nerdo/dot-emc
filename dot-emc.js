@@ -8,7 +8,7 @@ doT Express Master of Ceremonies
 
 
 (function() {
-  var Defines, cache, clone, curOptions, curPath, defaults, doT, fs, html, mergeObjects, path, renderFile, workingPaths;
+  var Defines, cache, clone, curOptions, curPath, defaults, doT, fs, html, mergeObjects, path, renderFile, repeat, tplDepth, workingPaths;
 
   fs = require("fs");
 
@@ -32,11 +32,17 @@ doT Express Master of Ceremonies
 
   curPath = null;
 
+  tplDepth = 0;
+
   defaults = {
     fileExtension: "def",
     options: {
       templateSettings: {
-        cache: true
+        cache: true,
+        literalDelimiters: {
+          start: '{{@',
+          end: '@}}'
+        }
       }
     }
   };
@@ -48,12 +54,30 @@ doT Express Master of Ceremonies
     };
   }
 
+  repeat = function(s, count) {
+    var pattern, result;
+    if (count < 1) {
+      return "";
+    }
+    result = "";
+    pattern = s.valueOf();
+    while (count > 1) {
+      if (count & 1) {
+        result += pattern;
+      }
+      count >>= 1;
+      pattern += pattern;
+    }
+    return result += pattern;
+  };
+
   Defines = (function() {
 
     function Defines() {}
 
     Defines.prototype.include = function(filename, vars) {
-      var returnValue, template;
+      var lDepth, ld, returnValue, template;
+      tplDepth++;
       returnValue = void 0;
       if (!path.extname(filename)) {
         filename = "" + filename + "." + defaults.fileExtension;
@@ -63,17 +87,43 @@ doT Express Master of Ceremonies
       }
       curPath = path.dirname(filename);
       workingPaths.push(curPath);
-      vars = typeof vars !== "object" ? curOptions : mergeObjects(true, clone(curOptions), vars);
+      switch (typeof vars) {
+        case "object":
+          vars = mergeObjects(true, clone(curOptions), vars);
+          break;
+        case "boolean":
+          lDepth = vars ? tplDepth : 0;
+          break;
+        case "number":
+          lDepth = vars;
+          break;
+        case "undefined":
+        case "string":
+          vars = curOptions;
+      }
       try {
         if (curOptions.templateSettings.cache && filename in cache) {
           template = cache[filename];
         } else {
           template = cache[filename] = fs.readFileSync(filename, 'utf8');
         }
-        returnValue = doT.template(template, curOptions.templateSettings, this)(vars);
+        if (typeof vars === "object") {
+          returnValue = doT.template(template, curOptions.templateSettings, this)(vars);
+        } else {
+          if (lDepth > 1) {
+            ld = defaults.options.templateSettings.literalDelimiters;
+            returnValue = " " + (repeat(ld.start, lDepth - 1)) + " " + template + " " + (repeat(ld.end, lDepth - 1)) + " ";
+          } else {
+            returnValue = template;
+          }
+          console.log("filename = " + filename);
+          console.log("returnValue = " + returnValue);
+        }
         workingPaths.pop();
+        tplDepth--;
       } catch (err) {
         workingPaths.pop();
+        tplDepth--;
         curPath = workingPaths.length ? workingPaths[workingPaths.length - 1] : null;
         throw err;
       }
@@ -179,8 +229,15 @@ doT Express Master of Ceremonies
 
   exports.Defines = Defines;
 
+  exports.mergeObjects = mergeObjects;
+
+  exports.clone = clone;
+
   exports.init = function(settings) {
+    var ts;
     defaults = mergeObjects(true, defaults, settings);
+    ts = defaults.options.templateSettings;
+    ts.literal = new RegExp(ts.literalDelimiter.start.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") + "([\\s\\S]+?)" + ts.literalDelimiter.end.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), "g");
     return exports;
   };
 
