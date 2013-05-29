@@ -7,7 +7,7 @@ doT Express Master of Ceremonies
 
 
 (function() {
-  var Defines, cache, clone, curOptions, curPath, defaults, doT, e, fs, html, mergeObjects, path, renderFile, workingPaths;
+  var Defines, clone, curOptions, curPath, defaults, doT, e, fs, html, mergeObjects, path, renderFile, workingPaths;
 
   fs = require("fs");
 
@@ -24,8 +24,6 @@ doT Express Master of Ceremonies
     }
   }
 
-  cache = {};
-
   workingPaths = [];
 
   curOptions = null;
@@ -34,6 +32,15 @@ doT Express Master of Ceremonies
 
   defaults = {
     fileExtension: "def",
+    cacheManager: {
+      get: function(filename) {
+        return this.cache[filename];
+      },
+      set: function(filename, data) {
+        return this.cache[filename] = data;
+      },
+      cache: {}
+    },
     options: {
       templateSettings: {
         cache: true
@@ -52,9 +59,10 @@ doT Express Master of Ceremonies
     function Defines() {}
 
     Defines.prototype.include = function(filename, vars) {
-      var err, returnValue, template;
+      var cacheManager, err, returnValue, template, usingCache, _ref;
 
       returnValue = void 0;
+      filename = filename.replace('~', (_ref = defaults.app) != null ? _ref.get("views" || '~') : void 0);
       if (!path.extname(filename)) {
         filename = "" + filename + "." + defaults.fileExtension;
       }
@@ -65,10 +73,16 @@ doT Express Master of Ceremonies
       workingPaths.push(curPath);
       vars = typeof vars !== "object" ? curOptions : mergeObjects(true, clone(curOptions), vars);
       try {
-        if (curOptions.templateSettings.cache && filename in cache) {
-          template = cache[filename];
-        } else {
-          template = cache[filename] = fs.readFileSync(filename, 'utf8');
+        usingCache = curOptions.templateSettings.cache;
+        if (usingCache) {
+          cacheManager = defaults.cacheManager;
+          template = cacheManager.get(filename);
+        }
+        if (typeof template === "undefined") {
+          template = fs.readFileSync(filename, "utf8");
+        }
+        if (usingCache) {
+          cacheManager.set(filename, template);
         }
         returnValue = doT.template(template, curOptions.templateSettings, this)(vars);
         workingPaths.pop();

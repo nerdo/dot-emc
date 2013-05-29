@@ -1,6 +1,6 @@
 {
   "name": "dot-emc",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "dot-emc is a doT stub for Express 3.x with support for caching and partials.",
   "main": "dot-emc.js",
   "scripts": {

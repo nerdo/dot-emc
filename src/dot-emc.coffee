@@ -14,15 +14,18 @@ try
 catch e
 	throw e if e.code != "MODULE_NOT_FOUND"
 
-cache = {}
 workingPaths = []
 curOptions = null
 curPath = null
 
 defaults =
 	fileExtension: "def"
+	cacheManager:
+		get: (filename) -> @cache[filename]
+		set: (filename, data) -> @cache[filename] = data
+		cache: {}
 	options:
-		templateSettings: 
+		templateSettings:
 			cache: true
 
 if html then defaults.options.prettyPrint =
@@ -32,6 +35,7 @@ if html then defaults.options.prettyPrint =
 class Defines
 	include: (filename, vars) ->
 		returnValue = undefined
+		filename = filename.replace '~', defaults.app?.get "views" or '~'
 		filename = "#{filename}.#{defaults.fileExtension}" if !path.extname filename
 		filename = path.resolve curPath, filename if curPath
 		curPath = path.dirname filename
@@ -39,10 +43,13 @@ class Defines
 		vars = if typeof vars != "object" then curOptions else mergeObjects true, clone(curOptions), vars
 
 		try
-			if curOptions.templateSettings.cache and filename of cache
-				template = cache[filename]
-			else
-				template = cache[filename] = fs.readFileSync filename, 'utf8'
+			usingCache = curOptions.templateSettings.cache
+			if usingCache
+				cacheManager = defaults.cacheManager
+				template =  cacheManager.get filename
+			if typeof template is "undefined"
+				template = fs.readFileSync filename, "utf8"
+			cacheManager.set filename, template if usingCache
 			returnValue = doT.template(template, curOptions.templateSettings, @)(vars)
 			workingPaths.pop()
 		catch err
