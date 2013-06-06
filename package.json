@@ -1,6 +1,6 @@
 {
   "name": "dot-emc",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "dot-emc is a doT stub for Express 3.x with support for caching and partials.",
   "main": "dot-emc.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nerdo/dot-emc.git"
+    "url": "https://github.com/chrisware/dot-emc.git"
   },
   "dependencies": {
     "dot": ">= 1.0.0"
