@@ -112,7 +112,7 @@ renderFile = (filename, options, fn) ->
 		fn = options
 		options = {}
 	fn = ( -> ) if typeof fn != "function"
-	curOptions = mergeObjects true, options, defaults.options, templateSettings: doT.templateSettings
+	curOptions = mergeObjects true, options, templateSettings: doT.templateSettings, defaults.options
 	def = new Defines()
 
 	try
