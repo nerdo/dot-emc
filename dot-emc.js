@@ -175,9 +175,9 @@ doT Express Master of Ceremonies
     if (typeof fn !== "function") {
       fn = (function() {});
     }
-    curOptions = mergeObjects(true, options, defaults.options, {
+    curOptions = mergeObjects(true, options, {
       templateSettings: doT.templateSettings
-    });
+    }, defaults.options);
     def = new Defines();
     try {
       if (html && curOptions.pretty) {
