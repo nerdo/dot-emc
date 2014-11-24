@@ -111,6 +111,20 @@ A better solution is to use ~ to refer to the views directory in the filename. A
 
 Note: The ~ will only get expanded if you pass a reference to the Express app to dot-emc's init function.
 
+Dynamic partial view by node server render. the page model will be append to the def is def.model.
+
+     res.render('index', {title: 'Welcome', partialPath: 'partial'});
+
+in template
+
+     {{#def.include(def.model.partialPath, {title: 'The partial'}) }}
+
+or
+
+     {{#def.include(def.model.partialPath, def.model) }}
+		
+Note: Also you can use the full path, such as: /www/myproject/views/partial.def
+
 Template Caching
 ----------------
 

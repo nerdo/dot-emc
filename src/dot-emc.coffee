@@ -33,6 +33,9 @@ if html then defaults.options.prettyPrint =
 	indent_size: 1
 
 class Defines
+	constructor:()->
+		@model = curOptions
+
 	include: (filename, vars) ->
 		returnValue = undefined
 		filename = filename.replace '~', defaults.app?.get "views" or '~'
